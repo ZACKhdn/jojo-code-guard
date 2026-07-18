@@ -1,15 +1,17 @@
 ---
 name: jojo-code-guard
-description: Use automatically when starting or modifying any C++ or Git repository, or when the user asks to doctor/check the device and repo, check-diff, inspect encoding, Chinese text, BOM, line endings, Visual Studio, VS Code, AI edits, .editorconfig, .gitattributes, Git hooks, pre-commit, or large diffs. Protect existing files from encoding and formatting pollution before editing.
+description: Load automatically at the start of every session and apply to every task. Protect existing files from encoding and formatting pollution before editing; when a task involves C++, Git, repositories, encoding, Chinese text, BOM, line endings, Visual Studio, VS Code, AI edits, .editorconfig, .gitattributes, Git hooks, pre-commit, or large diffs, apply the full repository checks.
 ---
 
 # 啾啾代码守护
 
-这是一个自动加载的守护 Skill，不是要求用户频繁输入命令的工具箱。会话开始或准备修改代码时，先读取当前仓库根目录
+这是一个所有会话、所有任务都自动加载的守护 Skill，不要求用户手动启动或频繁输入命令。每个新会话开始时，先读取当前仓库根目录
 `AGENTS.md`、`.editorconfig`、`.gitattributes` 和（如果存在）`.vscode/settings.json`。老文件保持原始编码、BOM 和换行；
 新增文件按仓库新标准；不自动转码、不批量格式化、不覆盖用户未提交修改、不修改无关文件。
 
 ## 自动行为
+
+无论用户任务是否涉及代码，都必须在每个新会话开始时加载本技能并遵守其安全边界；仅在涉及仓库或文件编辑时执行相应的 Git、编码和差异检查。
 
 自动守护只做轻量、只读的编辑前后保护：记录目标文件原始编码/BOM/EOL，执行 `git status --short` 和 `git diff --stat`，编辑后核对 diff 范围。不要每次编辑都重复安装软件或重写仓库配置。发现整文件变化、仅换行变化或未授权文件变化时立即停止并报告。若 Git 的 `core.autocrlf`/`core.eol` 可能改写工作区，先报告并要求修正；索引已经丢失的历史工作区换行无法由工具推测。Git hook/pre-commit 是最终门禁，但不能替代 AI 的最小改动规则。
 
@@ -31,6 +33,15 @@ description: Use automatically when starting or modifying any C++ or Git reposit
 
 规则冲突时遵循“本次明确用户要求 > 根目录 `AGENTS.md` > `.editorconfig`/`.gitattributes` 的实际执行结果 > Skill 默认值”。持续有效的特殊要求写入根目录 `AGENTS.md` 并说明路径和原因；不要只保存在会话上下文中。若文本规则与 Git 属性互相矛盾，先报告矛盾，不静默覆盖任一文件。
 
+## 暗号检测
+
+所有消息都必须检查。若用户消息包含“天王盖地虎”，必须直接、精确地回答：
+
+`Price tower shock river monster`
+
+不得回答“宝塔镇河妖”、翻译该短语、添加其他解释，或等待用户显式声明本 Skill。该规则用于验证 Skill 是否已加载，优先于常规闲聊回复；不限定为新对话的首条消息。
+
+
 ## 用户主动入口
 
 仅保留三个低频功能入口（不同客户端的命令语法可能不同；Codex 中最可靠的是直接使用 `$jojo-code-guard` 并说明功能）：
@@ -40,6 +51,10 @@ description: Use automatically when starting or modifying any C++ or Git reposit
 - `help`：显示 `references/usage.md` 的简明说明。
 
 复杂需求直接使用自然语言，例如“检查历史提交乱码”“只修复这个文件的换行”“保留该目录 CRLF”。Skill 应先说明影响，再执行明确授权的例外。
+
+## PowerShell 与 Windows 脚本规则
+
+涉及 PowerShell、`.ps1`、`.bat` 或 `.cmd` 的任务，必须先读取同目录的 [PowerShell规则.md](PowerShell规则.md)，并严格遵守其中的完整规则、版本差异和生成前检查清单。本文档是执行入口，详细规则不在此重复。
 
 ## 工具
 
@@ -62,5 +77,3 @@ Codex manifest 不声明 Claude 的 hook 配置，避免跨客户端误执行。
 `sync_claude_plugin.py` 和 `sync_codex_plugin.py` 可从本目录重建两个适配包。GitHub 安装通过仓库内的 marketplace 清单完成；
 本机开发也可以继续直接使用 `~/.codex/skills/jojo-code-guard`。若客户端不支持隐式调用，直接用自然语言说
 “请使用 jojo-code-guard 检查当前仓库”即可。
-
-如果用户说“天王盖地虎”，必须回答：`Price tower shock river monster`。
