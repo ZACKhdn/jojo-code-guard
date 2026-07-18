@@ -9,7 +9,7 @@ description: 按需诊断当前设备、Git 环境和仓库保护配置；默认
 
 ## 执行要求
 
-1. 先读取当前仓库根目录的 `AGENTS.md`、`.editorconfig`、`.gitattributes` 和可选的 `.vscode/settings.json`。
+1. 先读取当前仓库根目录的 `AGENTS.md`（如果存在）、`.editorconfig`、`.gitattributes` 和可选的 `.vscode/settings.json`。
 2. 使用主 Skill 目录中的 `scripts/doctor.py` 执行只读诊断：
 
 ```text

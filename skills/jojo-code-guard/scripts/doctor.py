@@ -588,10 +588,21 @@ def _iter_setting_values(settings: dict[str, object]):
 
 def _check_repo(findings: list[Finding], repo: Path) -> None:
     """检查仓库规则文件、状态和潜在格式化设置。"""
-    for name in ("AGENTS.md", ".gitignore"):
+    for name in (".gitignore",):
         findings.append(
             Finding("OK" if (repo / name).exists() else "ACTION_REQUIRED", "仓库", name, "存在" if (repo / name).exists() else "缺失")
         )
+    agents_path = repo / "AGENTS.md"
+    findings.append(
+        Finding(
+            "OK",
+            "仓库",
+            "AGENTS.md",
+            "存在，将遵守其中的项目规则"
+            if agents_path.exists()
+            else "未提供；可由用户自行创建并写入项目规则",
+        )
+    )
     _check_editorconfig(findings, repo)
     _check_attributes(findings, repo)
     _check_vscode_settings(findings, repo)
@@ -615,7 +626,6 @@ def _check_repo(findings: list[Finding], repo: Path) -> None:
 def _template(name: str) -> bytes:
     """返回只用于缺失文件的保守模板。"""
     templates = {
-        "AGENTS.md": """# 项目代码守护规则\n\n- 现有文件保持原始编码、BOM 和换行，不自动全量转码。\n- 新增 C/C++ 文件使用 UTF-8 无 BOM + LF。\n- 新增 `.bat`、`.cmd` 文件使用 UTF-8 无 BOM + CRLF。\n- 修改前后检查 `git status --short` 和 `git diff --stat`。\n- 禁止无关格式化、批量整理和自动提交。\n- 发现整文件 diff 或疑似编码污染时立即停止并报告。\n""",
         ".editorconfig": """root = true\n\n[*]\n# 老项目不强制全局编码和换行，避免编辑器保存时改写历史文件。\ncharset = unset\nend_of_line = unset\ninsert_final_newline = unset\ntrim_trailing_whitespace = false\nindent_style = space\nindent_size = 4\n""",
         ".gitattributes": """# 老项目默认保留文件原始字节，避免 Git 自动转换换行。\n* -text\n""",
         ".gitignore": """# 常见 C++ 构建和 IDE 输出\n/build/\n/out/\n/.vs/\n/CMakeFiles/\nCMakeCache.txt\ncompile_commands.json\n\n# 仅共享项目级 VS Code 设置\n/.vscode/*\n!/.vscode/settings.json\n""",
@@ -626,7 +636,7 @@ def _template(name: str) -> bytes:
 def repair_repo(repo: Path, install_hook: bool = False) -> list[str]:
     """只创建缺失的保守配置，绝不覆盖已有文件。"""
     created: list[str] = []
-    for name in ("AGENTS.md", ".editorconfig", ".gitattributes", ".gitignore"):
+    for name in (".editorconfig", ".gitattributes", ".gitignore"):
         path = repo / name
         if not path.exists():
             path.write_bytes(_template(name))

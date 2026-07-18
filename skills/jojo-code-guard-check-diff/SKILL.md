@@ -9,7 +9,7 @@ description: 按需检查当前仓库的编码、BOM、换行、Git 空白错误
 
 ## 执行要求
 
-1. 先读取当前仓库根目录的 `AGENTS.md`、`.editorconfig` 和 `.gitattributes`。
+1. 先读取当前仓库根目录的 `AGENTS.md`（如果存在）、`.editorconfig` 和 `.gitattributes`。
 2. 使用主 Skill 目录中的 `scripts/check_diff.py` 检查暂存区、未暂存修改和未跟踪新增文本：
 
 ```text

@@ -5,7 +5,6 @@
 .editorconfig text eol=lf
 .gitattributes text eol=lf
 .gitignore text eol=lf
-AGENTS.md text eol=lf
 hooks/session-start text eol=lf
 *.png   binary
 *.jpg   binary

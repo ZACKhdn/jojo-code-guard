@@ -21,7 +21,7 @@ codex plugin add jojo-code-guard@jojo-code-guard
 /plugin install jojo-code-guard@jojo-code-guard
 ```
 
-安装后重新打开会话。插件管理器会从 GitHub 获取仓库，不需要用户手动 clone 或复制 Skill。Skill 不会复制到业务仓库；项目只需要自己的 `AGENTS.md`、`.editorconfig` 和 `.gitattributes`。
+安装后重新打开会话。插件管理器会从 GitHub 获取仓库，不需要用户手动 clone 或复制 Skill。Skill 不会复制到业务仓库；项目可按需提供自己的 `AGENTS.md`、`.editorconfig` 和 `.gitattributes`。
 
 首次提交本仓库时，在 Windows 工作树上也要为 Claude hook 写入 Unix 可执行位：
 
@@ -33,7 +33,7 @@ git add --chmod=+x hooks/run-hook.cmd hooks/session-start
 
 日常修改会自动遵守最小 diff 规则。低频检查可以使用 `doctor`、`check-diff` 和 `help`，也可以直接用自然语言提出要求。
 
-新增 `.ps1` 默认采用 UTF-8 无 BOM + LF；只有明确使用 Windows PowerShell 5.1 且包含中文时，才在项目 `AGENTS.md` 中声明 UTF-8 BOM 例外。
+新增 `.ps1` 默认采用 UTF-8 无 BOM + LF；只有明确使用 Windows PowerShell 5.1 且包含中文时，用户可自行在项目规则文件中声明 UTF-8 BOM 例外。
 
 Codex 中会分别显示以下入口：
 

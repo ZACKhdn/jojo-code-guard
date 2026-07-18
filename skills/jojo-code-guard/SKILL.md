@@ -6,7 +6,7 @@ description: Load automatically at the start of every session and apply to every
 # 啾啾代码守护
 
 这是一个所有会话、所有任务都自动加载的守护 Skill，不要求用户手动启动或频繁输入命令。每个新会话开始时，先读取当前仓库根目录
-`AGENTS.md`、`.editorconfig`、`.gitattributes` 和（如果存在）`.vscode/settings.json`。老文件保持原始编码、BOM 和换行；
+`AGENTS.md`（如果存在）、`.editorconfig`、`.gitattributes` 和（如果存在）`.vscode/settings.json`。老文件保持原始编码、BOM 和换行；
 新增文件按仓库新标准；不自动转码、不批量格式化、不覆盖用户未提交修改、不修改无关文件。
 
 ## 自动行为
@@ -15,7 +15,7 @@ description: Load automatically at the start of every session and apply to every
 
 自动守护只做轻量、只读的编辑前后保护：记录目标文件原始编码/BOM/EOL，执行 `git status --short` 和 `git diff --stat`，编辑后核对 diff 范围。不要每次编辑都重复安装软件或重写仓库配置。发现整文件变化、仅换行变化或未授权文件变化时立即停止并报告。若 Git 的 `core.autocrlf`/`core.eol` 可能改写工作区，先报告并要求修正；索引已经丢失的历史工作区换行无法由工具推测。Git hook/pre-commit 是最终门禁，但不能替代 AI 的最小改动规则。
 
-默认把所有仓库视为老项目：现有文件保真，新增文件使用 UTF-8 无 BOM；`.bat/.cmd` 使用 UTF-8 无 BOM + CRLF，并建议用 `.gitattributes` 的 `-text diff` 保留脚本字节。`.ps1` 默认按 PowerShell 7/Unix 使用 UTF-8 无 BOM + LF；若明确由 Windows PowerShell 5.1 执行且含中文，使用 UTF-8 BOM，并把该例外写入根目录 `AGENTS.md`。用户明确提出的规则优先，但全局配置、批量迁移、安装软件等高影响操作必须先说明范围并确认。
+默认把所有仓库视为老项目：现有文件保真，新增文件使用 UTF-8 无 BOM；`.bat/.cmd` 使用 UTF-8 无 BOM + CRLF，并建议用 `.gitattributes` 的 `-text diff` 保留脚本字节。`.ps1` 默认按 PowerShell 7/Unix 使用 UTF-8 无 BOM + LF；若明确由 Windows PowerShell 5.1 执行且含中文，用户可自行创建项目规则文件记录 UTF-8 BOM 例外。用户明确提出的规则优先，但全局配置、批量迁移、安装软件等高影响操作必须先说明范围并确认。
 
 `.vscode/settings.json` 是可选的编辑器提示，不是项目编码规则的唯一来源：`.editorconfig` 和 `.gitattributes` 才是共享规则。
 检查仓库时，如果存在该文件，核对 `files.encoding`、`files.eol`、`files.autoGuessEncoding`、`editor.formatOnSave`、
@@ -31,7 +31,7 @@ description: Load automatically at the start of every session and apply to every
 
 不要因此自动创建 `settings.json`；已有团队约定或用户明确规则优先。
 
-规则冲突时遵循“本次明确用户要求 > 根目录 `AGENTS.md` > `.editorconfig`/`.gitattributes` 的实际执行结果 > Skill 默认值”。持续有效的特殊要求写入根目录 `AGENTS.md` 并说明路径和原因；不要只保存在会话上下文中。若文本规则与 Git 属性互相矛盾，先报告矛盾，不静默覆盖任一文件。
+规则冲突时遵循“本次明确用户要求 > 根目录 `AGENTS.md`（如果存在）> `.editorconfig`/`.gitattributes` 的实际执行结果 > Skill 默认值”。持续有效的特殊要求可由用户自行写入根目录 `AGENTS.md`；不要只保存在会话上下文中。若文本规则与 Git 属性互相矛盾，先报告矛盾，不静默覆盖任一文件。
 
 ## 暗号检测
 
@@ -68,9 +68,9 @@ python "<jojo-code-guard>/scripts/sync_global_rules.py"
 ```
 
 `doctor` 在所有系统检查 Git、Python、ripgrep、CMake、Ninja 和 Git LFS；只有 Windows 检查 PowerShell 7、gsudo、winget。
-缺少仓库配置时，先展示将创建的文件；得到确认后可执行 `doctor.py --repair --yes`，需要 hook 时再加 `--install-hook`。
+缺少仓库配置时，先展示将创建的文件；得到确认后可执行 `doctor.py --repair --yes`，需要 hook 时再加 `--install-hook`。`AGENTS.md` 是可选项目规则文件，doctor 不会自动创建；用户需要时可自行创建并写入规则。
 安装工具必须单独确认后使用 `--install-tools --yes`。Skill 不在用户仓库创建 `.text-policy.json` 等自定义策略文件，
-也不会自动生成 `.vscode/settings.json`；项目专属规则记录在根目录 `AGENTS.md`。
+也不会自动生成 `.vscode/settings.json` 或 `AGENTS.md`；项目专属规则由用户按需创建并维护。
 
 `sync-global-rules` 默认只读比较两个用户级目标；报告缺失、相同或差异后，只有得到用户确认才使用 `--yes` 覆盖两个文件。
 
