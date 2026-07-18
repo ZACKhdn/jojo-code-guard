@@ -1,0 +1,19 @@
+{
+  "name": "jojo-code-guard",
+  "description": "Protect C++ repositories from encoding, line-ending, Git diff, and AI-edit pollution.",
+  "version": "0.2.0",
+  "author": {
+    "name": "ZACKhdn",
+    "url": "https://github.com/ZACKhdn"
+  },
+  "homepage": "https://github.com/ZACKhdn/jojo-code-guard",
+  "repository": "https://github.com/ZACKhdn/jojo-code-guard",
+  "keywords": [
+    "cpp",
+    "encoding",
+    "line-endings",
+    "git",
+    "diff",
+    "vscode"
+  ]
+}

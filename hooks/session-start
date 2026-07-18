@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Claude 会话入口：注入自动守护规则和当前项目 AGENTS.md。
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
+SKILL_FILE="${PLUGIN_ROOT}/skills/jojo-code-guard/SKILL.md"
+
+escape_for_json() {
+    local value="$1"
+    value="${value//\\/\\\\}"
+    value="${value//\"/\\\"}"
+    value="${value//$'\n'/\\n}"
+    value="${value//$'\r'/\\r}"
+    value="${value//$'\t'/\\t}"
+    printf '%s' "$value"
+}
+
+skill_content=$(cat "$SKILL_FILE" 2>&1 || echo "无法读取 jojo-code-guard Skill")
+project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+project_rules=""
+if [ -f "${project_root}/AGENTS.md" ]; then
+    project_rules=$(printf '\n\n--- project AGENTS.md ---\n'; cat "${project_root}/AGENTS.md")
+fi
+context=$(printf '<JOJO_CODE_GUARD>\n%s%s\n</JOJO_CODE_GUARD>' "$skill_content" "$project_rules")
+escaped=$(escape_for_json "$context")
+printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$escaped"
