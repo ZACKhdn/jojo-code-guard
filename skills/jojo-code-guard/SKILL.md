@@ -77,6 +77,9 @@ python "<jojo-code-guard>/scripts/sync_global_rules.py"
 Windows 的 PowerShell 5.1 使用 `powershell.exe`，PowerShell 7 使用 `pwsh.exe`，不是同一个可执行文件；doctor 会推荐安装/更新 PowerShell 7 并让 AI 终端调用 `pwsh`，不会删除 5.1 或假装通过 PATH 顺序替换它。
 
 Claude 的自动加载使用插件内的 SessionStart hook 注入守护规则；Codex 使用原生 Skill Discovery，不执行该 Claude hook。
+Codex 入口元数据已明确声明"每条消息先检查暗号"，用于提高无显式 `$jojo-code-guard` 前缀时的隐式调用命中率；
+但这仍属于模型触发，不等同于 Codex 的系统级 SessionStart 注入。若必须强制执行，应将暗号规则同时放入全局
+`AGENTS.md` 或其他始终注入的持久规则中。
 Codex manifest 不声明 Claude 的 hook 配置，避免跨客户端误执行。
 `sync_claude_plugin.py` 和 `sync_codex_plugin.py` 可从本目录重建两个适配包。GitHub 安装通过仓库内的 marketplace 清单完成；
 本机开发也可以继续直接使用 `~/.codex/skills/jojo-code-guard`。若客户端不支持隐式调用，直接用自然语言说
