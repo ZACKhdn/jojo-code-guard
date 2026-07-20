@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
 import json
 import os
 import platform
@@ -11,6 +12,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -654,6 +656,62 @@ def repair_repo(repo: Path, install_hook: bool = False) -> list[str]:
     return created
 
 
+def _is_windows_admin() -> bool:
+    """判断当前 Windows 进程是否已获得管理员令牌。"""
+    try:
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except (AttributeError, OSError):
+        return False
+
+
+def _ps_single_quote(value: str) -> str:
+    """转义 PowerShell 单引号字符串。"""
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _run_elevated_install(commands: list[list[str]]) -> tuple[bool, str]:
+    """生成临时 PowerShell 脚本并通过 UAC 请求管理员权限执行。"""
+    powershell = shutil.which("pwsh") or shutil.which("powershell")
+    if not powershell:
+        return False, "未找到 PowerShell，无法申请 UAC 管理员权限"
+    descriptor, temporary_path = tempfile.mkstemp(prefix="jojo-code-guard-", suffix=".ps1")
+    os.close(descriptor)
+    script_path = Path(temporary_path)
+    payload = json.dumps(commands, ensure_ascii=False)
+    script = f'''# 此脚本由 AI 生成，用于在用户授权 UAC 后安装设备工具。
+$commands = ConvertFrom-Json -InputObject @'
+{payload}
+'@
+foreach ($command in $commands) {{
+    $executable = [string]$command[0]
+    $commandArguments = @($command | Select-Object -Skip 1)
+    Write-Host "正在执行：$executable"
+    & $executable @commandArguments
+    if ($LASTEXITCODE -ne 0) {{
+        Write-Warning "命令失败，退出码：$LASTEXITCODE"
+    }}
+}}
+Write-Host "安装脚本执行完毕。"
+Read-Host "按 Enter 关闭此管理员窗口"
+Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue
+'''
+    script_path.write_text(script, encoding="utf-8", newline="\n")
+    argument_list = "-NoProfile -ExecutionPolicy Bypass -File " + _ps_single_quote(str(script_path))
+    command = (
+        "Start-Process -FilePath "
+        + _ps_single_quote(powershell)
+        + " -ArgumentList "
+        + _ps_single_quote(argument_list)
+        + " -WorkingDirectory "
+        + _ps_single_quote(str(Path.cwd()))
+        + " -Verb RunAs"
+    )
+    code, output = _run([powershell, "-NoProfile", "-Command", command])
+    if code != 0:
+        return False, output or "启动 UAC 管理员安装脚本失败"
+    return True, f"已创建管理员安装脚本：{script_path}；请在 UAC 提示中选择“是”并授权"
+
+
 def _install_tools(findings: list[Finding]) -> None:
     """按平台安装明显缺失的基础工具；调用者必须先取得明确确认。"""
     system = platform.system()
@@ -678,9 +736,13 @@ def _install_tools(findings: list[Finding]) -> None:
     elif system == "Darwin" and shutil.which("brew"):
         commands.append(["brew", "upgrade" if shutil.which("rg") else "install", "ripgrep"])
     if commands:
-        for command in commands:
-            code, output = _run(command)
-            findings.append(Finding("OK" if code == 0 else "BLOCKED", "设备安装", " ".join(command[:4]), output or "安装命令已执行"))
+        if system == "Windows" and not _is_windows_admin():
+            launched, message = _run_elevated_install(commands)
+            findings.append(Finding("ACTION_REQUIRED" if launched else "BLOCKED", "设备安装", "UAC", message))
+        else:
+            for command in commands:
+                code, output = _run(command)
+                findings.append(Finding("OK" if code == 0 else "BLOCKED", "设备安装", " ".join(command[:4]), output or "安装命令已执行"))
     else:
         findings.append(Finding("ACTION_REQUIRED", "设备安装", "工具", "未找到可安全自动安装的包管理器或工具均已存在"))
 
